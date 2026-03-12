@@ -1,0 +1,5 @@
+gymnasium
+ale-py
+numpy
+matplotlib
+pandas
