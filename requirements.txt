@@ -1,5 +1,8 @@
-gymnasium
-ale-py
+python 3.11.9
+
+pip install:
+pettingzoo
+chess
+pygame
 numpy
 matplotlib
-pandas
