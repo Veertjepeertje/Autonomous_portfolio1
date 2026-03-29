@@ -205,5 +205,10 @@ class ForkBuilderAgent:
             if col in valid_moves:
                 return col
 
+        # 7. Random fallback
+        return random.choice(valid_moves)
+    
+    def act(self, observation):
+        return self.select_action(observation)
         # Willekeurige fallback
         return random.choice(valid_moves)
