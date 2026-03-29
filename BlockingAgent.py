@@ -12,31 +12,51 @@ class BlockingAgent:
 
         opponent = board[:, :, 1]
 
-        # 🔥 check elke kolom: voorkomt directe winst
+        # 🔴 1. DIRECTE WIN BLOCKEN
+        for col in legal_moves:
+            row = self.get_next_open_row(opponent, col)
+            if row is None:
+                continue
+
+            temp = opponent.copy()
+            temp[row][col] = 1
+
+            if self.check_win(temp):
+                print("BLOCK WIN:", col)
+                return col
+
+        # 🟡 2. 3-OP-EEN-RIJ DREIGING BLOCKEN
+        threat_moves = []
+
+        for col in legal_moves:
+            row = self.get_next_open_row(opponent, col)
+            if row is None:
+                continue
+
+            if self.is_threat(opponent, row, col):
+                threat_moves.append(col)
+
+        if threat_moves:
+            print("BLOCK THREAT:", threat_moves)
+            return random.choice(threat_moves)
+        
+        # 🟠 FORK BLOCKEN
         for col in legal_moves:
 
             row = self.get_next_open_row(opponent, col)
             if row is None:
                 continue
 
-            temp_board = opponent.copy()
-            temp_board[row][col] = 1
+            temp = opponent.copy()
+            temp[row][col] = 1
 
-            if self.check_win(temp_board):
-                print("BLOCKING WIN:", col)
+            future_wins = self.count_winning_moves(temp)
+
+            if future_wins >= 2:
+                print("BLOCK FORK:", col)
                 return col
 
-        # 🔥 extra: detecteer 3-op-een-rij dreigingen
-        for col in legal_moves:
-
-            row = self.get_next_open_row(opponent, col)
-            if row is None:
-                continue
-
-            if self.creates_threat(opponent, row, col):
-                print("BLOCKING THREAT:", col)
-                return col
-
+        # 🔵 3. RANDOM
         return random.choice(legal_moves)
 
     def get_next_open_row(self, board, col):
@@ -44,6 +64,23 @@ class BlockingAgent:
             if board[row][col] == 0:
                 return row
         return None
+    
+    def count_winning_moves(self, board):
+
+        winning_moves = 0
+
+        for col in range(7):
+            row = self.get_next_open_row(board, col)
+            if row is None:
+                continue
+
+            temp = board.copy()
+            temp[row][col] = 1
+
+            if self.check_win(temp):
+                winning_moves += 1
+
+        return winning_moves
 
     def check_win(self, board):
 
@@ -73,40 +110,36 @@ class BlockingAgent:
 
         return False
 
-    def creates_threat(self, board, row, col):
+    def is_threat(self, board, row, col):
 
         temp = board.copy()
         temp[row][col] = 1
 
-        # tel aantal 3-op-een-rij
-        count = 0
+        # check alle richtingen op 3-op-een-rij
+        return self.count_in_row(temp, row, col) >= 3
 
-        # horizontaal
-        for c in range(max(0, col-3), min(4, col+1)):
-            window = temp[row][c:c+4]
-            if np.sum(window) == 3:
+    def count_in_row(self, board, row, col):
+
+        def count_dir(dr, dc):
+            count = 1
+
+            # forward
+            r, c = row + dr, col + dc
+            while 0 <= r < 6 and 0 <= c < 7 and board[r][c] == 1:
                 count += 1
+                r += dr
+                c += dc
 
-        # verticaal
-        for r in range(max(0, row-3), min(3, row+1)):
-            window = [temp[r+i][col] for i in range(4)]
-            if sum(window) == 3:
+            # backward
+            r, c = row - dr, col - dc
+            while 0 <= r < 6 and 0 <= c < 7 and board[r][c] == 1:
                 count += 1
+                r -= dr
+                c -= dc
 
-        # diagonaal \
-        for i in range(-3, 1):
-            coords = [(row+i+j, col+i+j) for j in range(4)]
-            if all(0 <= r < 6 and 0 <= c < 7 for r, c in coords):
-                window = [temp[r][c] for r, c in coords]
-                if sum(window) == 3:
-                    count += 1
+            return count
 
-        # diagonaal /
-        for i in range(-3, 1):
-            coords = [(row-i-j, col+i+j) for j in range(4)]
-            if all(0 <= r < 6 and 0 <= c < 7 for r, c in coords):
-                window = [temp[r][c] for r, c in coords]
-                if sum(window) == 3:
-                    count += 1
+        # check alle richtingen
+        directions = [(0,1), (1,0), (1,1), (1,-1)]
 
-        return count > 0
+        return max(count_dir(dr, dc) for dr, dc in directions)
