@@ -1,6 +1,4 @@
 pettingzoo
-chess
 pygame
 numpy
 matplotlib
-random
