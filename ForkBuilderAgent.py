@@ -205,3 +205,6 @@ class ForkBuilderAgent:
 
         # 7. Random fallback
         return random.choice(valid_moves)
+    
+    def act(self, observation):
+        return self.select_action(observation)
